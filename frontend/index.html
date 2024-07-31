@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Spelling Autocorrect</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #1e1e1e, #333);
+            animation: gradient 15s ease infinite;
+            background-size: 400% 400%;
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        #inputText {
+            align-items: center;
+            text-align: left;
+            padding-left: 2%;
+            padding-top: 2%;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        textarea, #outputBox {
+            width: 50%;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: none;
+            border-radius: 55px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1.5em;
+        }
+
+        textarea::placeholder {
+            color: #bbb;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            background: #555;
+            color: white;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #777;
+        }
+
+        #outputBox {
+            display: none;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            width: 50%;
+            position: relative;
+        }
+
+        #typewriter {
+            font-family: 'Courier New', Courier, monospace;
+            white-space: nowrap;
+            overflow: hidden;
+            border-right: 0.15em solid orange; /* Cursor */
+            animation: blink-caret 0.75s step-end infinite;
+            text-align: left;
+            font-size: 32px;
+            font-weight: bold;
+            position: relative;
+            margin-bottom: 10px; /* Adjust as needed */
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        @keyframes blink-caret {
+            from, to { border-color: transparent; }
+            50% { border-color: orange; }
+        }
+    </style>
+</head>
+<body>
+    <h1>TYPO - TERMINATOR</h1>
+    <textarea id="inputText" placeholder="Enter your text here..."></textarea>
+    <br>
+    <button id="startButton">Correct</button>
+    <br>
+    <div id="typewriterContainer">
+        <p id="typewriter"><b>Corrected or suggested spellings are:</b></p>
+    </div>
+    <div id="outputBox">
+        <p id="outputSuggestions"></p>
+    </div>
+
+    <script>
+        async function getCorrection() {
+            let inputText = document.getElementById('inputText').value;
+            let outputSuggestions = document.getElementById('outputSuggestions');
+            let outputBox = document.getElementById('outputBox');
+
+            outputSuggestions.innerText = '';
+            outputBox.style.display = 'none';
+
+            try {
+                let response = await fetch('http://localhost:5000/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text: inputText })
+                });
+                let data = await response.json();
+                outputSuggestions.innerText = data.suggestions.join(', ');
+                outputBox.style.display = 'block';
+            } catch (error) {
+                document.getElementById('typewriter').innerText = 'An error occurred while fetching suggestions.';
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            const text = document.getElementById('typewriter').textContent;
+            const typewriter = document.getElementById('typewriter');
+            typewriter.textContent = '';
+            let i = 0;
+
+            function typeWriter() {
+                if (i < text.length) {
+                    typewriter.textContent += text.charAt(i);
+                    i++;
+                    setTimeout(typeWriter, 50); // Adjust the speed by changing the delay time
+                }
+            }
+
+            document.getElementById('startButton').addEventListener('click', function() {
+                i = 0;
+                typewriter.textContent = ''; // Clear the text content before starting
+                typeWriter();
+                getCorrection(); // Call the correction function
+            });
+
+            // Handle Enter key press
+            document.getElementById('inputText').addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault(); // Prevent adding a new line
+                    document.getElementById('startButton').click(); // Trigger the correct button click
+                }
+            });
+        });
+    </script>
+</body>
+</html>
